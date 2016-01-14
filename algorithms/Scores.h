@@ -67,9 +67,17 @@ private:
 	int* index_max;	//special indexes: which one is the max
 	T*  scores_mar;	//special scores: marginal one
 
+	void* info;		//some info (bad design for nn_input, but ...) !!OUTSIDE!!
+
 public:
+	~Scores(){
+		delete scores_map;
+		delete []scores_max;
+		delete []scores_mar;
+	}
 	int get_numc(){return num_class;}
 	long get_numl()	{return num_links;}
+	void* get_info() {return info;}
 
 	bool has_value(long ind){
 		return scores_map->find(ind)!=scores_map->end();
@@ -82,8 +90,8 @@ public:
 			return iter->second;
 	}
 
-	Scores(int numc,long numl,T* tab,T dd):num_class(numc),num_links(numl),scores_table(tab),default_value(dd),
-											scores_max(0),index_max(0),scores_mar(0){
+	Scores(int numc,long numl,T* tab,T dd,void* i):num_class(numc),num_links(numl),scores_table(tab),default_value(dd),
+											scores_max(0),index_max(0),scores_mar(0),info(i){
 		long msize = MAP_DEFAULT_LENGTH;
 		if(msize < num_links*MAP_ALPHA)
 			msize = num_links*MAP_ALPHA;
@@ -138,9 +146,13 @@ public:
 	}
 };
 
+
+//helper functions
+#include "../csnn/nn_input.h"
+Scores<REAL_SCORES>* get_scores(nn_input* input,REAL_SCORES* tab,int numc,int numl);
+void combine_scores_o3g(Scores<REAL_SCORES>* so3,const Scores<REAL_SCORES>* so2,const Scores<REAL_SCORES>* so1);
+void combine_scores_o2sib(Scores<REAL_SCORES>* so2,const Scores<REAL_SCORES>* so1);
 }
-
-
 
 
 #endif /* ALGORITHMS_SCORES_H_ */

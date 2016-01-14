@@ -108,10 +108,9 @@ void M2_p2o3::each_train_one_iter()
 		for(;;){
 			//forward
 			DependencyInstance* x = training_corpus->at(i);
+			int length = x->length();
 			nn_input* the_inputs;
 			REAL *fscores = forward_scores_o3g(x,mach,&the_inputs,dict->get_helper(),0,STA_noprobs[i],hp);
-			double* rscores = 0;
-			double* tmp_marginals = 0;
 
 			this_instance += the_inputs->get_numi();
 			all_forward_instance += the_inputs->get_numi();
@@ -120,18 +119,20 @@ void M2_p2o3::each_train_one_iter()
 			this_sentence ++;
 			i++;
 
-			//two situations
-			int length = x->length();
-			if(!hp->CONF_labeled){
-				//calculate prob
-				rscores = rearrange_scores_o3g(x,mach,the_inputs,fscores,0,0,0,0,hp);
-				tmp_marginals = encodeMarginals_o3g(length,rscores);
-			}
-			else{
-				//calculate prob
-				rscores = rearrange_scores_o3g(x,mach,the_inputs,fscores,0,0,0,0,hp);
-				tmp_marginals = LencodeMarginals_o3g(length,rscores,mach->get_odim());
-			}
+			the_scores::Scores<REAL_SCORES>* rscores = the_scores::get_scores(the_inputs,fscores,mach->get_odim(),the_inputs->get_numi());
+			REAL_SCORES* tmp_marginals = LencodeMarginals(length,*rscores);
+//			//two situations
+//			int length = x->length();
+//			if(!hp->CONF_labeled){
+//				//calculate prob
+//				rscores = rearrange_scores_o3g(x,mach,the_inputs,fscores,0,0,0,0,hp);
+//				tmp_marginals = encodeMarginals_o3g(length,rscores);
+//			}
+//			else{
+//				//calculate prob
+//				rscores = rearrange_scores_o3g(x,mach,the_inputs,fscores,0,0,0,0,hp);
+//				tmp_marginals = LencodeMarginals_o3g(length,rscores,mach->get_odim());
+//			}
 			//set gradients
 			int HERE_dim = the_inputs->num_width;
 			REAL* to_assign = fscores;
@@ -146,12 +147,13 @@ void M2_p2o3::each_train_one_iter()
 					tmpg = 0;
 				int tmp_goal = the_inputs->goals->at(ii/HERE_dim);
 				bool tmp_nonproj = ((tmpg>GET_MIN_ONE(tmph,tmpm)) && (tmpg<GET_MAX_ONE(tmph,tmpm)));	//!!maybe non-proj right link
+				REAL_SCORES* from_mar = tmp_marginals+odim*(ii/HERE_dim);
 				for(int once=0;once<odim;once++,to_assign++){
 					if(tmp_nonproj){
 						*to_assign = 0;	//no gradient
 						continue;
 					}
-					double tmp_one_from_m = tmp_marginals[get_index2_o3g(length,tmpg,tmph,tmps,tmpm,once,odim)];
+					double tmp_one_from_m = from_mar[once];
 					if(tmp_goal == once)
 						*to_assign = -1 * (1 - tmp_one_from_m) + *to_assign * hp->CONF_score_p2reg;
 					else
@@ -164,7 +166,7 @@ void M2_p2o3::each_train_one_iter()
 
 			delete the_inputs;
 			delete []fscores;
-			delete []rscores;
+			delete rscores;
 			delete []tmp_marginals;
 
 			if(i>=num_sentences)

@@ -7,6 +7,7 @@
 
 #include "M2_p2.h"
 #include "../algorithms/Eisner.h"
+#include "../algorithms/Scores.h"
 
 void M2_p2o1::each_create_machine()
 {
@@ -64,10 +65,9 @@ void M2_p2o1::each_train_one_iter()
 		for(;;){
 			//forward
 			DependencyInstance* x = training_corpus->at(i);
+			int length = x->length();
 			nn_input* the_inputs;
 			REAL *fscores = forward_scores_o1(x,mach,&the_inputs,dict->get_helper(),0,hp);
-			double* rscores = 0;
-			double* tmp_marginals = 0;
 
 			this_instance += the_inputs->get_numi();
 			all_forward_instance += the_inputs->get_numi();
@@ -76,18 +76,20 @@ void M2_p2o1::each_train_one_iter()
 			this_sentence ++;
 			i++;
 
-			//two situations
-			int length = x->length();
-			if(!hp->CONF_labeled){
-				//calculate prob
-				rscores = rearrange_scores_o1(x,mach,the_inputs,fscores,0,0,hp);
-				tmp_marginals = encodeMarginals(length,rscores);
-			}
-			else{
-				//calculate prob
-				rscores = rearrange_scores_o1(x,mach,the_inputs,fscores,0,0,hp);
-				tmp_marginals = LencodeMarginals(length,rscores,mach->get_odim());
-			}
+
+			the_scores::Scores<REAL_SCORES>* rscores = the_scores::get_scores(the_inputs,fscores,mach->get_odim(),the_inputs->get_numi());
+			REAL_SCORES* tmp_marginals = LencodeMarginals(length,*rscores);
+//			//two situations
+//			if(!hp->CONF_labeled){
+//				//calculate prob
+//				rscores = rearrange_scores_o1(x,mach,the_inputs,fscores,0,0,hp);
+//				tmp_marginals = encodeMarginals(length,rscores);
+//			}
+//			else{
+//				//calculate prob
+//				rscores = rearrange_scores_o1(x,mach,the_inputs,fscores,0,0,hp);
+//				tmp_marginals = LencodeMarginals(length,rscores,mach->get_odim());
+//			}
 			//set gradients
 			int HERE_dim = the_inputs->num_width;
 			REAL* to_assign = fscores;
@@ -95,11 +97,12 @@ void M2_p2o1::each_train_one_iter()
 				int tmph = the_inputs->inputs->at(ii);
 				int tmpm = the_inputs->inputs->at(ii+1);
 				int tmp_goal = the_inputs->goals->at(ii/HERE_dim);
+				REAL_SCORES* from_mar = tmp_marginals+odim*(ii/HERE_dim);
 				for(int once=0;once<odim;once++,to_assign++){
 					if(tmp_goal == once)
-						*to_assign = -1 * (1 - tmp_marginals[get_index2(length,tmph,tmpm,once,odim)]) + *to_assign * hp->CONF_score_p2reg;
+						*to_assign = -1 * (1 - from_mar[once]) + *to_assign * hp->CONF_score_p2reg;
 					else
-						*to_assign = tmp_marginals[get_index2(length,tmph,tmpm,once,odim)] + *to_assign * hp->CONF_score_p2reg;	//now object is maximum
+						*to_assign = from_mar[once] + *to_assign * hp->CONF_score_p2reg;	//now object is maximum
 				}
 			}
 
@@ -110,7 +113,7 @@ void M2_p2o1::each_train_one_iter()
 
 			delete the_inputs;
 			delete []fscores;
-			delete []rscores;
+			delete rscores;
 			delete []tmp_marginals;
 
 			//out of the mini-batch
