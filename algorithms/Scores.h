@@ -44,7 +44,7 @@ public:
 	OneScores(long n,ScoreHashMap* m,T* t,T dd):the_num(n),the_map(m),the_table(t),default_value(dd){}
 	T operator[](long index){
 		if(!the_map)	//direct one
-			return the_table[the_num];
+			return the_table[index];
 		ScoreHashMap::iterator iter = the_map->find(index);
 		if(iter == the_map->end())
 			return default_value;

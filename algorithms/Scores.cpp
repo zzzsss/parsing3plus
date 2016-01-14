@@ -46,7 +46,7 @@
 				WARNING(numw,"Unknown order.");
 				break;
 			}
-			ret->add_associate(the_key,i);
+			ret->add_associate(the_key,i/numw);
 		}
 		return ret;
 	}
