@@ -11,15 +11,15 @@
 #include "EisnerO2sib.h"
 #include "EisnerO3g.h"
 
-namespace the_scores{
+
 	const REAL_SCORES DEFAULT_SCORE = -10000000.0;
 	//get the Scores
-	Scores<REAL_SCORES>* get_scores(nn_input* input,REAL_SCORES* tab,int numc,int numl){
+	Scores<REAL_SCORES>* get_the_scores(nn_input* input,REAL_SCORES* tab,int numc,int numl){
 		WARNING_UNEQUAL(input->num_inst,numl,"Wrong numl.");	//numl*numc -- tab
-		Scores<REAL_SCORES>* ret = new Scores<REAL_SCORES>(numc,numl,tab,DEFAULT_SCORE);
+		Scores<REAL_SCORES>* ret = new Scores<REAL_SCORES>(numc,numl,tab,DEFAULT_SCORE,input);
 		int length = input->wordl->size();
 		int numw = input->num_width;
-		int the_index[4];	//h,m,s,g
+		int the_index[4] = {0,0,0,0};	//h,m,s,g
 		for(long i=0;i<numl*numw;i+=numw){
 			for(int k=0;k<numw;k++)
 				the_index[k] = input->inputs->at(i+k);
@@ -54,6 +54,8 @@ namespace the_scores{
 	//combine scores
 	void combine_scores_o3g(Scores<REAL_SCORES>* so3,const Scores<REAL_SCORES>* so2,const Scores<REAL_SCORES>* so1)
 	{
+		if(!so1 && !so2)
+			return;
 		//combine some scores
 		nn_input* the_inputs = static_cast<nn_input*>(so3->get_info());
 		int length = the_inputs->wordl->size();
@@ -71,16 +73,18 @@ namespace the_scores{
 			long index_o2sib  = get_index2_o2sib(length,tmph,tmps,tmpm);
 			long index_o1  = get_index2(length,tmph,tmpm);
 			REAL_SCORES* tab_o3g = (*so3)[index_o3g];
-			REAL_SCORES* tab_o2sib = (*so2)[index_o2sib];
-			REAL_SCORES* tab_o1 = (*so1)[index_o1];
+			const REAL_SCORES* tab_o2sib = (so2) ? (*so2)[index_o2sib] : 0;
+			const REAL_SCORES* tab_o1 = (so1) ? (*so1)[index_o1] : 0;
 			for(int ll=0;ll<so3->get_numc();ll++){	//WARNING: tab_o2sib or tab_o1 might be zero, but maybe this could not happen
-				tab_o3g[ll] += tab_o2sib[ll];
-				tab_o3g[ll] += tab_o1[ll];
+				tab_o3g[ll] += (so2) ? tab_o2sib[ll] : 0;
+				tab_o3g[ll] += (so1) ? tab_o1[ll] : 0;
 			}
 		}
 	}
 	void combine_scores_o2sib(Scores<REAL_SCORES>* so2,const Scores<REAL_SCORES>* so1)
 	{
+		if(!so1)
+			return;
 		//combine some scores
 		nn_input* the_inputs = static_cast<nn_input*>(so2->get_info());
 		int length = the_inputs->wordl->size();
@@ -94,12 +98,11 @@ namespace the_scores{
 			long index_o2sib  = get_index2_o2sib(length,tmph,tmps,tmpm);
 			long index_o1  = get_index2(length,tmph,tmpm);
 			REAL_SCORES* tab_o2sib = (*so2)[index_o2sib];
-			REAL_SCORES* tab_o1 = (*so1)[index_o1];
+			const REAL_SCORES* tab_o1 = (*so1)[index_o1];
 			for(int ll=0;ll<so2->get_numc();ll++){
 				tab_o2sib[ll] += tab_o1[ll];
 			}
 		}
 	}
-}
 
 

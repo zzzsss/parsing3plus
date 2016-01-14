@@ -11,14 +11,14 @@
 //prepare bool for high-order filtering
 //-score is the rearrange-score and here must be unlabeled prob
 //-cut>0 means absolute,cut<0 means compared to max
-static bool* TMP_get_cut_o1(int len,double* scores,double cut)
+static bool* TMP_get_cut_o1(int len,REAL* scores,double cut)
 {
-	double* scores_max = new double[len];
+	REAL* scores_max = new REAL[len];
 	for(int m=1;m<len;m++){	//each token's max-score head
 		scores_max[m] = scores[get_index2(len,0,m)];
 		for(int h=1;h<len;h++){
 			if(h==m) continue;
-			double tmp_s = scores[get_index2(len,h,m)];
+			REAL tmp_s = scores[get_index2(len,h,m)];
 			if(tmp_s > scores_max[m])
 				scores_max[m] = tmp_s;
 		}
@@ -49,7 +49,7 @@ bool* Process::get_cut_o1(DependencyInstance* x,CsnnO1* o1_filter,Dictionary *di
 	REAL* fscores = forward_scores_o1(x,o1_filter,&the_inputs,dict->get_helper(),1);	//testing-mode, forward scores
 	//2.get binary scores
 	int length = x->length();
-	double* scores = new double[length*length];
+	REAL* scores = new REAL[length*length];
 	if(!is_marginal){
 		for(int i=0;i<length*length;i++)
 			scores[i] = 0;		//set to 0
@@ -60,6 +60,7 @@ bool* Process::get_cut_o1(DependencyInstance* x,CsnnO1* o1_filter,Dictionary *di
 			scores[get_index2(length,tmph,tmpm)] = 1-to_assign[fs_dim-1];	//1 - the last one
 			to_assign += fs_dim;
 		}
+		delete []fscores;
 	}
 	else{
 		//special one --- marginal probability
@@ -69,20 +70,19 @@ bool* Process::get_cut_o1(DependencyInstance* x,CsnnO1* o1_filter,Dictionary *di
 		for(int i=0;i<the_inputs->num_inst*2;i+=2){ //must be 2
 			int tmph = the_inputs->inputs->at(i);
 			int tmpm = the_inputs->inputs->at(i+1);
-			double tmp_sum = to_assign[0];
+			REAL tmp_sum = to_assign[0];
 			for(int ii=1;ii<fs_dim;ii++)
 				tmp_sum = logsumexp(tmp_sum,to_assign[ii],false);
 			scores[get_index2(length,tmph,tmpm)] = tmp_sum;
 			to_assign += fs_dim;
 		}
 		//reaplace it ...
-		double* tmp_reaplace = scores;
+		REAL* tmp_reaplace = scores;
 		scores = encodeMarginals(length,scores);
 		delete []tmp_reaplace;
 	}
 	//3.filter out
 	bool* o1f_cut = TMP_get_cut_o1(x->length(),scores,cut);
-	delete []fscores;
 	delete []scores;
 	delete the_inputs;
 	return o1f_cut;
@@ -90,7 +90,7 @@ bool* Process::get_cut_o1(DependencyInstance* x,CsnnO1* o1_filter,Dictionary *di
 
 //2.the getting-score functions for parsing
 //used when testing or possible parsing in training
-double* Process::get_scores_o1(DependencyInstance* x,Csnn* m,Dictionary* dict,bool trans,HypherParameters*hh)
+Scores<REAL_SCORES>* Process::get_scores_o1(DependencyInstance* x,Csnn* m,Dictionary* dict,bool trans,HypherParameters*hh)
 {
 	//1.get the numbers and informations
 	int dictionary_labelnum = dict->getnum_deprel();
@@ -100,14 +100,13 @@ double* Process::get_scores_o1(DependencyInstance* x,Csnn* m,Dictionary* dict,bo
 	//2.getting the scores
 	nn_input* the_input;
 	REAL* fscores = forward_scores_o1(x,m,&the_input,dict->get_helper(),1);	//testing-mode, forward scores
-	double* rscores = rearrange_scores_o1(x,m,the_input,fscores,is_prob,is_trans,hh);
+	Scores<REAL_SCORES>* rscores = get_the_scores(the_input,fscores,m->get_odim(),the_input->get_numi());
 	delete the_input;
-	delete []fscores;
 	return rscores;
 }
 
-double* Process::get_scores_o2sib(DependencyInstance* x,Csnn* m,Dictionary* dict,bool trans,
-		bool* cut_o1,double* rscores_o1,HypherParameters*hh)
+Scores<REAL_SCORES>* Process::get_scores_o2sib(DependencyInstance* x,Csnn* m,Dictionary* dict,bool trans,
+		bool* cut_o1,Scores<REAL_SCORES>* rscores_o1,HypherParameters*hh)
 {
 	//1.get the numbers and informations
 	int dictionary_labelnum = dict->getnum_deprel();
@@ -117,14 +116,14 @@ double* Process::get_scores_o2sib(DependencyInstance* x,Csnn* m,Dictionary* dict
 	//2.getting the scores
 	nn_input* the_input;
 	REAL* fscores = forward_scores_o2sib(x,m,&the_input,dict->get_helper(),1,cut_o1);	//testing-mode, forward scores
-	double* rscores = rearrange_scores_o2sib(x,m,the_input,fscores,is_prob,is_trans,rscores_o1,hh);
+	Scores<REAL_SCORES>* rscores = get_the_scores(the_input,fscores,m->get_odim(),the_input->get_numi());
+	combine_scores_o2sib(rscores,rscores_o1);
 	delete the_input;
-	delete []fscores;
 	return rscores;
 }
 
-double* Process::get_scores_o3g(DependencyInstance* x,Csnn* m,Dictionary* dict,bool trans,
-		bool* cut_o1,double* rscores_o1,double* rscores_o2sib,HypherParameters*hh)
+Scores<REAL_SCORES>* Process::get_scores_o3g(DependencyInstance* x,Csnn* m,Dictionary* dict,bool trans,
+		bool* cut_o1,Scores<REAL_SCORES>* rscores_o1,Scores<REAL_SCORES>* rscores_o2sib,HypherParameters*hh)
 {
 	//1.get the numbers and informations
 	int dictionary_labelnum = dict->getnum_deprel();
@@ -134,9 +133,9 @@ double* Process::get_scores_o3g(DependencyInstance* x,Csnn* m,Dictionary* dict,b
 	//2.getting the scores
 	nn_input* the_input;
 	REAL* fscores = forward_scores_o3g(x,m,&the_input,dict->get_helper(),1,cut_o1);	//testing-mode, forward scores
-	double* rscores = rearrange_scores_o3g(x,m,the_input,fscores,is_prob,is_trans,rscores_o1,rscores_o2sib,hh);
+	Scores<REAL_SCORES>* rscores = get_the_scores(the_input,fscores,m->get_odim(),the_input->get_numi());
+	combine_scores_o3g(rscores,rscores_o2sib,rscores_o1);
 	delete the_input;
-	delete []fscores;
 	return rscores;
 }
 

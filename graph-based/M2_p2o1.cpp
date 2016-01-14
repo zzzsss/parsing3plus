@@ -77,7 +77,7 @@ void M2_p2o1::each_train_one_iter()
 			i++;
 
 
-			the_scores::Scores<REAL_SCORES>* rscores = the_scores::get_scores(the_inputs,fscores,mach->get_odim(),the_inputs->get_numi());
+			the_scores::Scores<REAL_SCORES>* rscores = get_the_scores(the_inputs,fscores,mach->get_odim(),the_inputs->get_numi());
 			REAL_SCORES* tmp_marginals = LencodeMarginals(length,*rscores);
 //			//two situations
 //			if(!hp->CONF_labeled){
@@ -112,7 +112,6 @@ void M2_p2o1::each_train_one_iter()
 			//mach->check_gradients(the_inputs);
 
 			delete the_inputs;
-			delete []fscores;
 			delete rscores;
 			delete []tmp_marginals;
 

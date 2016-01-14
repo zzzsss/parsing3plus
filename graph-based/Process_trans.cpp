@@ -25,6 +25,7 @@ static inline void SET_LOG_HERE(double* tmp_yes,double* tmp_nope,int ln){
 		*tmp_nope = log(*tmp_nope);
 }
 
+/* @deprecated
 //score[h,m,l] = log(prob(h,m==l)*products(prob(h,m'==0)))
 //s[len,len,ln]; nope[len,len]
 static void trans_o1(double* s,double* nope,int len,int ln)
@@ -199,3 +200,4 @@ static void trans_o3g(double* s,double* nope,long len,int ln)
 		}
 	}
 }
+*/

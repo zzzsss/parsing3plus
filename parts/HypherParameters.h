@@ -127,7 +127,7 @@ HypherParameters(string conf):hp_nn()
 	CONF_dict_remove=3;
 	CONF_random_seed=12345;
 	CONF_labeled=1;
-	CONF_score_prob=1;
+	CONF_score_prob=0;
 	CONF_score_o1filter_cut=1e-4;
 	CONF_score_mach_so1="";
 	CONF_score_mach_so2sib="";
@@ -203,7 +203,7 @@ HypherParameters(string conf):hp_nn()
 		else if(buf=="o_srand")		fin >> CONF_random_seed;
 		else if(buf=="o_labeled")	fin >> CONF_labeled;
 		//1.5-scores
-		else if(buf=="s_prob") 		fin >> CONF_score_prob;
+		//@deprecated//else if(buf=="s_prob") 		fin >> CONF_score_prob;
 		else if(buf=="s_fo1_cut") 	fin >> CONF_score_o1filter_cut;
 //		else if(buf=="s_so1_combine")	fin >> CONF_score_combine_o1;
 //		else if(buf=="s_so2sib_combine")	fin >> CONF_score_combine_o2sib;

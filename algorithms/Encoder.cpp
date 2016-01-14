@@ -216,4 +216,29 @@ REAL_SCORES* LencodeMarginals(const int length,Scores<REAL_SCORES>& scores)
 	return marginals;
 }
 
+//-----------------------------
+REAL_SCORES* encodeMarginals(const int length,REAL_SCORES* scores)
+{
+	OneScores<REAL_SCORES> onescores(length*length,0,scores,0);
+	REAL_SCORES* marginals = new REAL_SCORES[length*length];	//use get_index2
+	REAL_SCORES *beta = new REAL_SCORES[length * length * 2 * 2];
+	REAL_SCORES *alpha = new REAL_SCORES[length * length * 2 * 2];
+	REAL_SCORES z = calc_inside(length, beta,onescores);
+	calc_outside(length,beta,onescores,alpha);
 
+	for(int i=0;i<length;i++){
+		for(int j=i+1;j<length;j++){
+			//i->j
+			int key_io = getKey(i, j, 0, 0, length);
+			int key_assign = get_index2(length,i,j);
+			marginals[key_assign] = exp(beta[key_io]+alpha[key_io]-z);
+			//j->i
+			key_io = getKey(i, j, 1, 0, length);
+			key_assign = get_index2(length,j,i);
+			marginals[key_assign] = exp(beta[key_io]+alpha[key_io]-z);
+		}
+	}
+	delete []beta;
+	delete []alpha;
+	return marginals;
+}

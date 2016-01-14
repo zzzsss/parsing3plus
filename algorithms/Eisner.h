@@ -46,5 +46,6 @@ inline int get_index2(int len,int h,int m)
 
 extern vector<int>* decodeProjective(int length,OneScores<REAL_SCORES>& scores);	//only one class
 extern REAL_SCORES* LencodeMarginals(const int length,Scores<REAL_SCORES>& scores);	//same as the ones in scores
+extern REAL_SCORES* encodeMarginals(const int length,REAL_SCORES* scores);
 
 #endif /* EISNER_H_ */

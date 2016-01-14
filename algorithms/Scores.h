@@ -13,6 +13,7 @@
 #include "Helper.h"
 using namespace std;
 using namespace boost;
+#include "../csnn/nn_input.h"
 
 typedef float REAL_SCORES;
 typedef boost::unordered_map<long, long> ScoreHashMap;	//index -> index in the table
@@ -42,6 +43,8 @@ private:
 public:
 	OneScores(long n,ScoreHashMap* m,T* t,T dd):the_num(n),the_map(m),the_table(t),default_value(dd){}
 	T operator[](long index){
+		if(!the_map)	//direct one
+			return the_table[the_num];
 		ScoreHashMap::iterator iter = the_map->find(index);
 		if(iter == the_map->end())
 			return default_value;
@@ -74,6 +77,8 @@ public:
 		delete scores_map;
 		delete []scores_max;
 		delete []scores_mar;
+		//WARNING: special one
+		delete []scores_table;
 	}
 	int get_numc(){return num_class;}
 	long get_numl()	{return num_links;}
@@ -100,7 +105,7 @@ public:
 	void add_associate(long key,long value){
 		ScoreHashMap::iterator iter = scores_map->find(key);
 		if(iter == scores_map->end())
-			scores_map->insert(key,value);
+			scores_map->insert(pair<long,long>(key,value));
 		else
 			WARNING(key,"Repeat key for Scores");
 	}
@@ -124,6 +129,9 @@ public:
 		}
 		return OneScores<T>(num_links,scores_map,scores_max,default_value);
 	}
+	int get_scores_maxone_index(long index){
+		return index_max[get_value(index)];
+	}
 	OneScores<T> get_scores_marginal(){	//here return object directly
 		scores_mar = new T[num_links];
 		T* to_assign = scores_table;
@@ -142,17 +150,22 @@ public:
 		if(iter == scores_map->end())
 			return 0;
 		else
-			return &scores_map[iter->second*num_class];
+			return &scores_table[iter->second*num_class];
+	}
+
+	const T* operator[](long index) const{
+		ScoreHashMap::iterator iter = scores_map->find(index);
+		if(iter == scores_map->end())
+			return 0;
+		else
+			return &scores_table[iter->second*num_class];
 	}
 };
-
-
-//helper functions
-#include "../csnn/nn_input.h"
-Scores<REAL_SCORES>* get_scores(nn_input* input,REAL_SCORES* tab,int numc,int numl);
-void combine_scores_o3g(Scores<REAL_SCORES>* so3,const Scores<REAL_SCORES>* so2,const Scores<REAL_SCORES>* so1);
-void combine_scores_o2sib(Scores<REAL_SCORES>* so2,const Scores<REAL_SCORES>* so1);
 }
 
+using the_scores::Scores;
+Scores<REAL_SCORES>* get_the_scores(nn_input* input,REAL_SCORES* tab,int numc,int numl);
+void combine_scores_o3g(Scores<REAL_SCORES>* so3,const Scores<REAL_SCORES>* so2,const Scores<REAL_SCORES>* so1);
+void combine_scores_o2sib(Scores<REAL_SCORES>* so2,const Scores<REAL_SCORES>* so1);
 
 #endif /* ALGORITHMS_SCORES_H_ */
