@@ -120,7 +120,7 @@ void M2_p2o3::each_train_one_iter()
 			i++;
 
 			the_scores::Scores<REAL_SCORES>* rscores = get_the_scores(the_inputs,fscores,mach->get_odim(),the_inputs->get_numi());
-			REAL_SCORES* tmp_marginals = LencodeMarginals(length,*rscores);
+			REAL_SCORES* tmp_marginals = LencodeMarginals_o3g(length,*rscores);
 //			//two situations
 //			int length = x->length();
 //			if(!hp->CONF_labeled){

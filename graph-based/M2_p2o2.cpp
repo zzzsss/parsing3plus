@@ -89,7 +89,7 @@ void M2_p2o2::each_train_one_iter()
 		for(;;){
 			//forward
 			DependencyInstance* x = training_corpus->at(i);
-			int length = x->length();
+			const int length = x->length();
 			nn_input* the_inputs;
 			REAL *fscores = forward_scores_o2sib(x,mach,&the_inputs,dict->get_helper(),0,STA_noprobs[i],hp);
 
@@ -101,7 +101,7 @@ void M2_p2o2::each_train_one_iter()
 			i++;
 
 			the_scores::Scores<REAL_SCORES>* rscores = get_the_scores(the_inputs,fscores,mach->get_odim(),the_inputs->get_numi());
-			REAL_SCORES* tmp_marginals = LencodeMarginals(length,*rscores);
+			REAL_SCORES* tmp_marginals = LencodeMarginals_o2sib(length,*rscores);
 //			//two situations
 //			int length = x->length();
 //			if(!hp->CONF_labeled){

@@ -255,7 +255,7 @@ static void calc_outside(const int length,const REAL_SCORES *beta,OneScores<REAL
 //direction: 0,st(right);1,ts(left)
 //spans: 0,incomplete;1,complete;2,sibling
 
-REAL_SCORES* LencodeMarginals_o2sib(const long length,Scores<REAL_SCORES>& scores)
+REAL_SCORES* LencodeMarginals_o2sib(const int length,Scores<REAL_SCORES>& scores)
 {
 	int ln = scores.get_numc();
 	REAL_SCORES* marginals = new REAL_SCORES[scores.get_numl()*ln];	//the return table
